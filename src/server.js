@@ -59,7 +59,7 @@ function sourceAuthor({ school, name, siteUrl, iconUrl }) {
     endpointUrl: publicUrl(baseUrl, 'api-sjmcl/article').href,
     name: shortName,
     fullName: name || `${school} Minecraft 社团`,
-    iconSrc: iconUrl || publicUrl(baseUrl, 'icon.svg').href
+    iconSrc: iconUrl || publicUrl(baseUrl, 'icon.png').href
   };
 }
 async function refreshSourceIcon(sourceId) {
@@ -282,7 +282,7 @@ function sjmclSource() {
   return {
     endpointUrl: publicUrl(baseUrl, 'api-sjmcl/article').href,
     fullName: process.env.SOURCE_FULL_NAME || '高校 Minecraft 社团资讯联合源',
-    iconSrc: process.env.SOURCE_ICON_URL || publicUrl(baseUrl, 'icon.svg').href,
+    iconSrc: process.env.SOURCE_ICON_URL || publicUrl(baseUrl, 'icon.png').href,
     name: process.env.SOURCE_NAME || 'MUA 高校社团资讯'
   };
 }
