@@ -47,6 +47,7 @@ const sourceShortNames = {
 const activeCrawls = new Set();
 let allRunning = false;
 let lastCrawlAt = null;
+let crawlProgress = { total: 0, completed: 0, succeeded: 0, failed: 0, startedAt: null, finishedAt: null };
 
 function error(res, status, message) { return res.status(status).json({ error: message }); }
 function sourceAuthor({ school, name, siteUrl, iconUrl }) {
@@ -136,19 +137,32 @@ async function crawlSource(id) {
 }
 
 async function crawlAll() {
-  if (allRunning) return;
+  if (allRunning) return crawlProgress;
   allRunning = true;
+  const startedAt = new Date().toISOString();
+  crawlProgress = { total: 0, completed: 0, succeeded: 0, failed: 0, startedAt, finishedAt: null };
   try {
     const [rows] = await pool.query('SELECT id FROM sources WHERE enabled=1 ORDER BY id');
+    crawlProgress.total = rows.length;
     let cursor = 0;
     await Promise.all(Array.from({ length: Math.min(3, rows.length) }, async () => {
       while (cursor < rows.length) {
         const id = Number(rows[cursor++].id);
-        try { await crawlSource(id); } catch (e) { console.error(`采集源 ${id} 失败: ${e.message}`); }
+        try {
+          await crawlSource(id);
+          crawlProgress.succeeded++;
+        } catch (e) {
+          crawlProgress.failed++;
+          console.error(`采集源 ${id} 失败: ${e.message}`);
+        } finally { crawlProgress.completed++; }
       }
     }));
     lastCrawlAt = new Date().toISOString();
-  } finally { allRunning = false; }
+    return crawlProgress;
+  } finally {
+    crawlProgress.finishedAt = new Date().toISOString();
+    allRunning = false;
+  }
 }
 
 async function schedule() {
@@ -349,7 +363,7 @@ app.get('/api/admin/sources', adminOnly, async (_req, res, next) => {
 app.get('/api/admin/settings', adminOnly, async (_req, res, next) => {
   try {
     const [[row]] = await pool.query("SELECT value FROM settings WHERE name='crawl_interval_minutes'");
-    res.json({ crawlIntervalMinutes: Number(row.value), crawling: allRunning, lastCrawlAt });
+    res.json({ crawlIntervalMinutes: Number(row.value), crawling: allRunning, lastCrawlAt, crawlProgress });
   } catch (e) { next(e); }
 });
 app.put('/api/admin/settings', adminOnly, csrf, async (req, res, next) => {
@@ -401,9 +415,9 @@ app.post('/api/admin/sources/:id/crawl', adminOnly, csrf, async (req, res, next)
   catch (e) { return error(res, 422, e.message); }
 });
 app.post('/api/admin/crawl', adminOnly, csrf, (_req, res) => {
-  if (allRunning) return res.json({ running: true });
+  if (allRunning) return res.json({ running: true, started: false, crawlProgress });
   void crawlAll().catch(e => console.error(e));
-  res.json({ running: true });
+  res.status(202).json({ running: true, started: true, crawlProgress });
 });
 
 const publicDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');

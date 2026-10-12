@@ -111,7 +111,20 @@ export function renderSummary(stats, settings, sources) {
   $('#metric-articles').textContent = stats.articles;
   $('#metric-errors').textContent = errors;
   $('#metric-enabled').textContent = `${enabled} 个已启用`;
-  $('#metric-crawling').textContent = settings.crawling ? '采集中' : '空闲';
-  $('#last-crawl').textContent = settings.lastCrawlAt ? `上次开始 ${dateLabel(settings.lastCrawlAt)}` : '尚未执行全量采集';
+  renderCrawlStatus(settings);
   $('#interval').value = settings.crawlIntervalMinutes;
+}
+
+export function renderCrawlStatus(settings) {
+  const progress = settings.crawlProgress || {};
+  $('#metric-crawling').textContent = settings.crawling ? '采集中' : '空闲';
+  if (settings.crawling) {
+    $('#last-crawl').textContent = progress.total
+      ? `已完成 ${progress.completed || 0} / ${progress.total}`
+      : '正在读取来源列表';
+  } else if (progress.finishedAt) {
+    $('#last-crawl').textContent = `完成：成功 ${progress.succeeded || 0}，失败 ${progress.failed || 0}`;
+  } else {
+    $('#last-crawl').textContent = settings.lastCrawlAt ? `上次完成 ${dateLabel(settings.lastCrawlAt)}` : '尚未执行全量采集';
+  }
 }

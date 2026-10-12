@@ -1,8 +1,8 @@
 import { request, setCsrfToken } from './api.js';
 import { $, setBusy, showToast } from './dom.js';
-import { renderAdmins, renderSources, renderSummary, sourceRule } from './view.js';
+import { renderAdmins, renderCrawlStatus, renderSources, renderSummary, sourceRule } from './view.js';
 
-const state = { sources: [], admins: [], user: null, editId: null };
+const state = { sources: [], admins: [], user: null, editId: null, monitoringCrawl: false };
 
 function maskEmail(value) {
   const [name, domain] = String(value || '').split('@');
@@ -26,6 +26,36 @@ async function refresh() {
   renderSummary(stats, settings, sources);
   renderSources(sources, actions);
   renderAdmins(admins, state.user, removeAdmin);
+  return settings;
+}
+
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+async function monitorCrawl(showCompletion = true) {
+  if (state.monitoringCrawl) return;
+  state.monitoringCrawl = true;
+  const button = $('#crawl-all');
+  setBusy(button, true, '采集中…');
+  try {
+    while (true) {
+      const settings = await request('/api/admin/settings');
+      renderCrawlStatus(settings);
+      if (!settings.crawling) {
+        await refresh();
+        if (showCompletion) {
+          const progress = settings.crawlProgress || {};
+          showToast(`采集完成：成功 ${progress.succeeded || 0} 个，失败 ${progress.failed || 0} 个`);
+        }
+        break;
+      }
+      await delay(1500);
+    }
+  } catch (error) {
+    showToast(`无法读取采集进度：${error.message}`, 'error');
+  } finally {
+    state.monitoringCrawl = false;
+    setBusy(button, false);
+  }
 }
 
 function setRuleValidation() {
@@ -159,11 +189,14 @@ function bindEvents() {
     const button = event.currentTarget;
     setBusy(button, true, '正在启动');
     try {
-      await request('/api/admin/crawl', { method: 'POST' });
-      $('#metric-crawling').textContent = '采集中';
-      showToast('已开始采集所有启用的来源');
-    } catch (error) { showToast(error.message, 'error'); }
-    finally { setBusy(button, false); }
+      const result = await request('/api/admin/crawl', { method: 'POST' });
+      showToast(result.started ? '已开始采集所有启用的来源' : '采集任务已在运行');
+      setBusy(button, false);
+      await monitorCrawl();
+    } catch (error) {
+      showToast(error.message, 'error');
+      setBusy(button, false);
+    }
   });
 
   const sections = [...document.querySelectorAll('.page-section')];
@@ -192,7 +225,8 @@ async function boot() {
     $('#admin-main').hidden = false;
     $('#admin-locked').hidden = true;
     bindEvents();
-    await refresh();
+    const settings = await refresh();
+    if (settings.crawling) void monitorCrawl(false);
   } catch (error) {
     $('#admin-locked h1').textContent = '后台暂时无法加载';
     $('#locked-message').textContent = error.message;
