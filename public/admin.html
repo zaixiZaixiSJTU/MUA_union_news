@@ -6,25 +6,25 @@
   <meta name="theme-color" content="#a81d84">
   <meta name="robots" content="noindex,nofollow">
   <title>管理后台 · MUA 联合资讯</title>
-  <link rel="icon" href="/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin-ui/styles.css">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin-ui/styles.css">
 </head>
 <body>
   <div class="auth-state" id="admin-locked">
     <div class="auth-card">
-      <img src="/vendor/hestia/mua.png" alt="MUA" width="132" height="74">
+      <img src="vendor/hestia/mua.png" alt="MUA" width="132" height="74">
       <p class="eyebrow">MUA UNION NEWS</p>
       <h1>正在确认管理权限</h1>
       <p id="locked-message">仅管理员列表中的已验证邮箱可以进入。</p>
-      <a class="button button-primary" href="/auth/login">使用 MUA 账号登录</a>
-      <a class="text-link" href="/">返回资讯首页</a>
+      <a class="button button-primary" href="auth/login">使用 MUA 账号登录</a>
+      <a class="text-link" href="./">返回资讯首页</a>
     </div>
   </div>
 
   <div class="admin-shell" id="admin-main" hidden>
     <aside class="sidebar">
-      <a class="sidebar-brand" href="/" aria-label="MUA 资讯首页">
-        <img src="/vendor/hestia/mua_tm.png" alt="MUA" width="112" height="63">
+      <a class="sidebar-brand" href="./" aria-label="MUA 资讯首页">
+        <img src="vendor/hestia/mua_tm.png" alt="MUA" width="112" height="63">
         <span>联合资讯后台</span>
       </a>
       <nav class="side-nav" aria-label="后台导航">
@@ -40,14 +40,14 @@
 
     <main class="workspace">
       <header class="mobile-header">
-        <a href="/" class="mobile-brand">MUA <span>联合资讯后台</span></a>
+        <a href="./" class="mobile-brand">MUA <span>联合资讯后台</span></a>
         <button class="text-button" id="mobile-logout" type="button">退出</button>
       </header>
 
       <section class="page-section overview-section" id="overview">
         <div class="page-heading">
           <div><p class="eyebrow">DASHBOARD</p><h1>资讯源管理</h1><p>维护高校社团网站、采集规则和后台访问权限。</p></div>
-          <div class="heading-actions"><a class="button button-secondary" href="/" target="_blank" rel="noopener">查看前台</a><button class="button button-primary" id="crawl-all" type="button">立即采集</button></div>
+          <div class="heading-actions"><a class="button button-secondary" href="./" target="_blank" rel="noopener">查看前台</a><button class="button button-primary" id="crawl-all" type="button">立即采集</button></div>
         </div>
 
         <div class="metric-grid" aria-label="数据概览">
@@ -125,6 +125,6 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/admin-ui/app.js" type="module"></script>
+  <script src="admin-ui/app.js" type="module"></script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const state = { page: 1, size: 12, total: 0 };
+const appRoot = new URL('./', import.meta.url);
+const appUrl = path => new URL(String(path).replace(/^\/+/, ''), appRoot);
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -143,7 +145,7 @@ async function loadArticles() {
   const grid = $('#article-grid');
   grid.replaceChildren(el('div', 'loading-state', '正在加载校园动态…'));
   try {
-    const response = await fetch(`/api/articles?page=${state.page}&pageSize=${state.size}`);
+    const response = await fetch(appUrl(`api/articles?page=${state.page}&pageSize=${state.size}`));
     if (!response.ok) throw new Error('加载失败');
     const data = await response.json();
     state.total = data.total;
@@ -158,9 +160,9 @@ async function loadArticles() {
 
 async function boot() {
   try {
-    const session = await (await fetch('/api/session')).json();
+    const session = await (await fetch(appUrl('api/session'))).json();
     if (session.user?.admin) {
-      $('#account-link').href = '/admin';
+      $('#account-link').href = appUrl('admin').href;
       $('#account-link').textContent = '管理后台';
     }
   } catch {}

@@ -1,4 +1,4 @@
-import { request, setCsrfToken } from './api.js';
+import { appUrl, request, setCsrfToken } from './api.js';
 import { $, setBusy, showToast } from './dom.js';
 import { renderAdmins, renderCrawlStatus, renderSources, renderSummary, sourceRule } from './view.js';
 
@@ -119,7 +119,7 @@ async function removeAdmin(admin) {
 }
 
 async function logout() {
-  try { await request('/auth/logout', { method: 'POST' }); } finally { location.href = '/'; }
+  try { await request('/auth/logout', { method: 'POST' }); } finally { location.href = appUrl().href; }
 }
 
 function bindEvents() {

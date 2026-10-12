@@ -10,10 +10,11 @@ import { initializeDatabase, makePool } from './db.js';
 import { MySqlSessionStore } from './session-store.js';
 import { decodeCursor, encodeCursor, parsePageSize } from './sjmcl-pagination.js';
 import { discoverIconUrl } from './source-icons.js';
+import { appPath, normalizeBaseUrl, publicUrl } from './public-url.js';
 
 const required = ['DATABASE_URL', 'SESSION_SECRET', 'BASE_URL', 'OAUTH_CLIENT_ID', 'OAUTH_CLIENT_SECRET', 'ADMIN_EMAILS'];
 for (const key of required) if (!process.env[key]) throw new Error(`缺少配置：${key}`);
-const baseUrl = new URL(process.env.BASE_URL);
+const baseUrl = normalizeBaseUrl(process.env.BASE_URL);
 const bootstrapAdmins = [...new Set(process.env.ADMIN_EMAILS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean))];
 const pool = makePool(process.env.DATABASE_URL);
 await initializeDatabase(pool, bootstrapAdmins);
@@ -26,10 +27,10 @@ const store = new MySqlSessionStore(pool);
 app.use(session({
   name: 'mua_news_session', store, secret: process.env.SESSION_SECRET,
   resave: false, saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', secure: baseUrl.protocol === 'https:', maxAge: 7 * 86400_000 }
+  cookie: { httpOnly: true, sameSite: 'lax', secure: baseUrl.protocol === 'https:', path: appPath(baseUrl), maxAge: 7 * 86400_000 }
 }));
 
-const callbackUrl = new URL('/auth/callback', baseUrl).href;
+const callbackUrl = publicUrl(baseUrl, 'auth/callback').href;
 const authorizeUrl = process.env.OAUTH_AUTHORIZE_URL || 'https://skin.mualliance.ltd/oauth/authorize';
 const tokenUrl = process.env.OAUTH_TOKEN_URL || 'https://skin.mualliance.ltd/oauth/token';
 const userInfoUrl = process.env.OAUTH_USERINFO_URL || 'https://skin.mualliance.ltd/api/user';
@@ -55,10 +56,10 @@ function sourceAuthor({ school, name, siteUrl, iconUrl }) {
   const host = site.hostname.replace(/^www\./, '');
   const shortName = sourceShortNames[host] || host.split('.')[0].toUpperCase();
   return {
-    endpointUrl: new URL('/api-sjmcl/article', baseUrl).href,
+    endpointUrl: publicUrl(baseUrl, 'api-sjmcl/article').href,
     name: shortName,
     fullName: name || `${school} Minecraft 社团`,
-    iconSrc: iconUrl || new URL('/icon.svg', baseUrl).href
+    iconSrc: iconUrl || publicUrl(baseUrl, 'icon.svg').href
   };
 }
 async function refreshSourceIcon(sourceId) {
@@ -191,7 +192,7 @@ app.get('/auth/login', (req, res) => {
 });
 app.get('/auth/callback', async (req, res) => {
   const state = String(req.query.state || '');
-  if (!state || state !== req.session.oauthState || !req.query.code) return res.redirect('/?auth=failed');
+  if (!state || state !== req.session.oauthState || !req.query.code) return res.redirect(`${appPath(baseUrl)}?auth=failed`);
   delete req.session.oauthState;
   try {
     const tokenResponse = await fetch(tokenUrl, {
@@ -218,14 +219,14 @@ app.get('/auth/callback', async (req, res) => {
     const verified = user.verified === true || user.verified === 1 || user.verified === '1';
     const admin = verified && await isAdminEmail(email);
     req.session.regenerate(err => {
-      if (err) return res.redirect('/?auth=failed');
+      if (err) return res.redirect(`${appPath(baseUrl)}?auth=failed`);
       req.session.user = { email, name: user.nickname || user.name || email, verified, admin };
       req.session.csrf = randomBytes(24).toString('hex');
-      req.session.save(() => res.redirect(req.session.user.admin ? '/admin' : '/?auth=not-admin'));
+      req.session.save(() => res.redirect(req.session.user.admin ? appPath(baseUrl, 'admin') : `${appPath(baseUrl)}?auth=not-admin`));
     });
   } catch (e) {
     console.error(`OAuth 登录失败: ${e.message}`);
-    res.redirect('/?auth=failed');
+    res.redirect(`${appPath(baseUrl)}?auth=failed`);
   }
 });
 app.post('/auth/logout', csrf, (req, res) => req.session.destroy(() => res.json({ ok: true })));
@@ -279,9 +280,9 @@ app.get('/api/articles', async (req, res, next) => {
 
 function sjmclSource() {
   return {
-    endpointUrl: new URL('/api-sjmcl/article', baseUrl).href,
+    endpointUrl: publicUrl(baseUrl, 'api-sjmcl/article').href,
     fullName: process.env.SOURCE_FULL_NAME || '高校 Minecraft 社团资讯联合源',
-    iconSrc: process.env.SOURCE_ICON_URL || new URL('/icon.svg', baseUrl).href,
+    iconSrc: process.env.SOURCE_ICON_URL || publicUrl(baseUrl, 'icon.svg').href,
     name: process.env.SOURCE_NAME || 'MUA 高校社团资讯'
   };
 }

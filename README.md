@@ -29,7 +29,7 @@ sudo editor .env
 
 | 变量 | 说明 |
 | --- | --- |
-| `BASE_URL` | 公网 HTTPS 地址，如 `https://news.example.com` |
+| `BASE_URL` | 公网 HTTPS 地址，填写 `https://www.mualliance.cn/news` |
 | `DATABASE_URL` | MySQL 连接地址，密码与 `MYSQL_PASSWORD` 一致 |
 | `MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` | MySQL 密码 |
 | `SESSION_SECRET` | 随机会话密钥 |
@@ -39,7 +39,7 @@ sudo editor .env
 OAuth 回调地址设置为：
 
 ```text
-https://news.example.com/auth/callback
+https://www.mualliance.cn/news/auth/callback
 ```
 
 启动 MySQL：
@@ -73,28 +73,36 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now mua-union-news
 ```
 
-Nginx 反向代理：
+将 [`deploy/nginx-news-location.conf`](deploy/nginx-news-location.conf) 中的两个 `location` 添加到 `www.mualliance.cn` 现有 WordPress 站点的 `server` 块：
 
 ```nginx
-server {
-    listen 80;
-    server_name news.example.com;
+location = /news {
+    return 308 /news/;
+}
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+location ^~ /news/ {
+    proxy_pass http://127.0.0.1:3000/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /news;
 }
 ```
 
-启用站点并配置 HTTPS 证书。生产地址为：
+检查并重载 Nginx：
 
-- 首页：`https://news.example.com/`
-- 后台：`https://news.example.com/admin`
-- API：`https://news.example.com/api-sjmcl/article?pageSize=12`
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+生产地址为：
+
+- 首页：`https://www.mualliance.cn/news/`
+- 后台：`https://www.mualliance.cn/news/admin`
+- API：`https://www.mualliance.cn/news/api-sjmcl/article?pageSize=12`
 
 ## SJMCL API
 
