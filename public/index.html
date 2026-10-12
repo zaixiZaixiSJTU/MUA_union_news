@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#a81d84">
+  <meta name="description" content="MUA 高校 Minecraft 社团资讯联合源">
+  <title>高校社团资讯 – MUA</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/vendor/hestia/bootstrap.min.css">
+  <link rel="stylesheet" href="/vendor/hestia/font-sizes.min.css">
+  <link rel="stylesheet" href="/vendor/hestia/style.min.css">
+  <link rel="stylesheet" href="/front.css">
+</head>
+<body id="top" class="archive category custom-background wp-custom-logo wp-theme-hestia header-layout-default hestia">
+  <div class="wrapper default">
+    <header class="header">
+      <nav class="navbar navbar-default navbar-fixed-top hestia_left navbar-not-transparent">
+        <div class="container">
+          <div class="navbar-header">
+            <div class="title-logo-wrapper">
+              <a class="navbar-brand" href="/" title="MUA">
+                <img class="hestia-hide-if-transparent" src="/vendor/hestia/mua.png" alt="MUA" width="1920" height="1080">
+                <img class="hestia-transparent-logo" src="/vendor/hestia/mua_tm.png" alt="MUA" width="1920" height="1080">
+              </a>
+            </div>
+            <div class="navbar-toggle-wrapper">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navigation" aria-expanded="false">
+                <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+                <span class="sr-only">切换导航</span>
+              </button>
+            </div>
+          </div>
+          <div id="main-navigation" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+              <li class="menu-item active"><a title="资讯" href="/">资讯</a></li>
+              <li class="menu-item"><a title="资讯源 API" href="/api-sjmcl/article?pageSize=12">资讯源 API</a></li>
+              <li class="menu-item"><a title="管理登录" href="/auth/login" id="account-link">管理登录</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <div id="primary" class="page-header header-small" data-parallax="active">
+      <div class="container"><div class="row"><div class="col-md-10 col-md-offset-1 text-center"><h1 class="hestia-title">高校社团资讯</h1></div></div></div>
+      <div class="header-filter header-filter-gradient"></div>
+    </div>
+
+    <div class="main">
+      <div class="hestia-blogs" data-layout="full-width">
+        <div class="container"><div class="row"><div class="col-md-10 col-md-offset-1 blog-posts-wrap">
+          <div id="article-grid" aria-live="polite"><div class="loading-state">正在加载校园动态…</div></div>
+          <nav class="navigation pagination" aria-label="文章分页">
+            <h2 class="screen-reader-text">文章分页</h2>
+            <div id="pagination-links" class="nav-links"><span aria-current="page" class="page-numbers current">1</span></div>
+          </nav>
+        </div></div></div>
+      </div>
+    </div>
+
+    <footer class="footer footer-black footer-big">
+      <div class="container"><div class="hestia-bottom-footer-content">
+        <ul class="footer-menu pull-left">
+          <li class="menu-item"><a href="/">资讯</a></li>
+          <li class="menu-item"><a href="/api-sjmcl/article?pageSize=12">资讯源 API</a></li>
+          <li class="menu-item"><a href="/admin">后台登录</a></li>
+        </ul>
+        <div class="copyright pull-right">MUA</div>
+      </div></div>
+    </footer>
+  </div>
+  <script src="/vendor/hestia/jquery.min.js"></script>
+  <script src="/vendor/hestia/bootstrap.min.js"></script>
+  <script>var requestpost = { ajaxurl: '', disable_autoslide: '', masonry: '' };</script>
+  <script src="/vendor/hestia/script.min.js"></script>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
