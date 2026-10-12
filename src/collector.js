@@ -20,19 +20,33 @@ export function safeHttpUrl(value, base, preserveHash = false) {
 
 async function request(url, accept = '*/*', options = {}) {
   let target = safeHttpUrl(url);
+  let safeLineRetries = 0;
+  let safeLineCookie = '';
   if (!target) throw new Error('只允许公网 HTTP/HTTPS 地址');
   for (let hop = 0; hop < 5; hop++) {
     const response = await fetch(target, {
       method: options.method || 'GET',
       body: options.body,
       headers: { 'User-Agent': 'MUA-Union-News/1.0 (+news aggregator)', Accept: accept,
+        ...(safeLineCookie ? { Cookie: safeLineCookie } : {}),
         ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
       redirect: 'manual', signal: AbortSignal.timeout(timeout)
     });
     if (response.status >= 300 && response.status < 400) {
-      target = safeHttpUrl(response.headers.get('location'), target);
-      if (!target) throw new Error('重定向到无效地址');
+      const redirected = safeHttpUrl(response.headers.get('location'), target);
+      if (!redirected) throw new Error('重定向到无效地址');
+      if (new URL(redirected).origin !== new URL(target).origin) safeLineCookie = '';
+      target = redirected;
       continue;
+    }
+    if (response.status === 403 && safeLineRetries < 2) {
+      const cookie = response.headers.get('set-cookie')?.match(/(?:^|,\s*)(sl-session=[^;,]+)/)?.[1];
+      if (cookie) {
+        safeLineCookie = cookie;
+        safeLineRetries++;
+        await response.body?.cancel();
+        continue;
+      }
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (Number(response.headers.get('content-length') || 0) > 5_000_000) throw new Error('响应过大');

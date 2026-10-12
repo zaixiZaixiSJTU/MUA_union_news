@@ -40,7 +40,7 @@ const sourceShortNames = {
   'mc.ecustvr.top': 'ECUSTVR', 'nuistcraft.com': 'NUISTCraft', 'nmo.net.cn': 'NMO',
   'njitmc.club': 'NJITMC', 'mc.taru.xj.cn': 'TARU', 'fdcraft.github.io': 'FDCraft',
   'mc.bobby.com.cn': 'BobbyCraft', 'gdufscraft.top': 'GDUFSCraft', 'uemcraft.cn': 'UEMCraft',
-  'asyncraft.club': 'Asyncraft', 'komonmc.cn': 'KomonMC', 'yitmc.cn': 'YITMC',
+  'asyncraft.club': 'Asyncraft', 'minejufe.cn': 'MineJUFE', 'yitmc.cn': 'YITMC',
   'ysumc.net': 'YSUMC', 'mc.cduestc.fun': 'CUESTC', 'cop.cooo.site': 'COOO',
   'cqumc.cn': 'CQUMC', 'ccutmc.bickey.net': 'CCUTMC', 'blog.qutcraft.cn': 'QUTCraft',
   'wlyw.qlu.edu.cn': 'WLYW'

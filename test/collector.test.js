@@ -60,3 +60,26 @@ test('拒绝本地地址和无效规则', () => {
   assert.equal(plain('<p>甲&nbsp;乙</p>'), '甲 乙');
   assert.throws(() => validateRule({ type: 'html' }));
 });
+
+test('SafeLine 会话验证后重试 WordPress 请求', async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls++;
+    if (calls === 1) {
+      return new Response('<html>SafeLine</html>', {
+        status: 403,
+        headers: { 'content-type': 'text/html', 'set-cookie': 'sl-session=test-token; Secure; Path=/; HttpOnly' }
+      });
+    }
+    assert.equal(options.headers.Cookie, 'sl-session=test-token');
+    return new Response(JSON.stringify([{ id: 1, title: { rendered: '社团公告' }, excerpt: { rendered: '摘要' },
+      link: 'https://club.example.edu/post/1', date: '2026-10-12T10:00:00' }]),
+    { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    const result = await collect({ rule_json: { type: 'wordpress', url: 'https://club.example.edu/wp-json/wp/v2/posts' } });
+    assert.equal(calls, 2);
+    assert.equal(result.articles[0].title, '社团公告');
+  } finally { globalThis.fetch = original; }
+});

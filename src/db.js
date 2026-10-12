@@ -53,6 +53,13 @@ export async function initializeDatabase(pool, bootstrapAdminEmails = []) {
     INDEX idx_expires (expires_at)
   ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
   await pool.query(`INSERT IGNORE INTO settings (name, value) VALUES ('crawl_interval_minutes', '60')`);
+  const mineJufe = initialSources.find(source => source.school === '江西财经大学');
+  if (mineJufe) {
+    await pool.execute(`UPDATE sources SET site_url=?, rule_json=?, icon_url=NULL, last_error=NULL
+      WHERE school=? AND (site_url LIKE ? OR
+        (site_url=? AND JSON_UNQUOTE(JSON_EXTRACT(rule_json, '$.type'))='auto'))`,
+    [mineJufe.siteUrl, JSON.stringify(mineJufe.rule), mineJufe.school, '%komonmc.cn%', mineJufe.siteUrl]);
+  }
   const [[{ adminCount }]] = await pool.query('SELECT COUNT(*) AS adminCount FROM admins');
   if (Number(adminCount) === 0) {
     for (const email of bootstrapAdminEmails) {
