@@ -201,12 +201,36 @@ function bindEvents() {
 
   const sections = [...document.querySelectorAll('.page-section')];
   const navLinks = [...document.querySelectorAll('.side-nav a')];
-  const observer = new IntersectionObserver(entries => {
-    const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-    if (!visible) return;
-    navLinks.forEach(link => link.classList.toggle('active', link.hash === `#${visible.target.id}`));
-  }, { rootMargin: '-15% 0px -65%', threshold: [0, .2, .6] });
-  sections.forEach(section => observer.observe(section));
+  const setActiveSection = id => {
+    navLinks.forEach(link => {
+      const active = link.hash === `#${id}`;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  };
+  const updateActiveSection = () => {
+    const atPageBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    if (atPageBottom) {
+      setActiveSection(sections.at(-1).id);
+      return;
+    }
+    const marker = window.scrollY + window.innerHeight * .28;
+    const current = sections.reduce((selected, section) => section.offsetTop <= marker ? section : selected, sections[0]);
+    setActiveSection(current.id);
+  };
+  let scrollFrame;
+  const scheduleActiveSectionUpdate = () => {
+    if (scrollFrame) return;
+    scrollFrame = requestAnimationFrame(() => {
+      scrollFrame = null;
+      updateActiveSection();
+    });
+  };
+  navLinks.forEach(link => link.addEventListener('click', () => setActiveSection(link.hash.slice(1))));
+  window.addEventListener('scroll', scheduleActiveSectionUpdate, { passive: true });
+  window.addEventListener('resize', scheduleActiveSectionUpdate);
+  updateActiveSection();
 }
 
 async function boot() {
