@@ -1,6 +1,6 @@
 # MUA 高校社团联合资讯
 
-聚合高校 Minecraft 社团官网资讯，提供公开浏览页面、采集管理后台和 SJMCL 兼容接口。项目使用 Node.js、Express 与 MySQL。
+高校 Minecraft 社团官网资讯聚合站，提供公开页面、采集后台和 SJMCL 兼容接口。技术栈为 Node.js、Express、MySQL。
 
 ![资讯首页](ui-home.png)
 
@@ -8,48 +8,95 @@
 
 ## 功能
 
-- 内置 25 所高校来源，支持 RSS、WordPress、SJMCL、HTML、JSON 和自定义规则。
-- 按计划自动采集，也可在后台立即采集单个或全部来源。
-- 后台可新增、编辑、停用和删除来源，管理员名单热更新。
-- 使用 MUA 用户中心 OAuth 登录，写操作带会话和 CSRF 校验。
-- `/api-sjmcl/article` 输出 SJMCL 兼容数据，文章标签包含所属学校。
+- 内置 25 所高校来源，支持 RSS、WordPress、SJMCL、HTML 和 JSON。
+- 定时采集；后台可维护来源、采集规则和管理员。
+- 使用 MUA 用户中心 OAuth 登录。
+- `/api-sjmcl/article` 输出 SJMCL 兼容数据，标签包含学校名称。
 
-## 本地启动
+## 服务器部署
 
-需要 Node.js 20.18+、Docker Desktop。
+适用于安装了 Node.js 20.18+、Docker Compose 和 Nginx 的 Ubuntu/Debian 服务器。
 
-```powershell
-Copy-Item .env.example .env
-# 编辑 .env，填写数据库密码、OAuth 客户端和初始管理员邮箱
-docker compose up -d mysql
-npm install
-npm start
+```bash
+sudo git clone https://github.com/zaixiZaixiSJTU/MUA_union_news.git /opt/mua-union-news
+cd /opt/mua-union-news
+sudo npm ci --omit=dev
+sudo cp .env.example .env
+sudo editor .env
 ```
 
-- 首页：<http://localhost:3000/>
-- 后台：<http://localhost:3000/admin>
-- API：<http://localhost:3000/api-sjmcl/article?pageSize=12>
+至少设置以下变量：
 
-OAuth 应用的回调地址应设置为：
+| 变量 | 说明 |
+| --- | --- |
+| `BASE_URL` | 公网 HTTPS 地址，如 `https://news.example.com` |
+| `DATABASE_URL` | MySQL 连接地址，密码与 `MYSQL_PASSWORD` 一致 |
+| `MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` | MySQL 密码 |
+| `SESSION_SECRET` | 随机会话密钥 |
+| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | 同一个 MUA OAuth 应用的凭据 |
+| `ADMIN_EMAILS` | 首次导入的管理员邮箱 |
+
+OAuth 回调地址设置为：
 
 ```text
-http://localhost:3000/auth/callback
+https://news.example.com/auth/callback
 ```
 
-## 配置
+启动 MySQL：
 
-| 变量 | 用途 |
-| --- | --- |
-| `DATABASE_URL` | MySQL 连接地址 |
-| `BASE_URL` | 网站公开地址；生产环境使用 HTTPS |
-| `SESSION_SECRET` | 会话签名密钥 |
-| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | MUA OAuth 应用凭据，必须属于同一个应用 |
-| `ADMIN_EMAILS` | 首次建库时导入的管理员邮箱，多个邮箱用逗号分隔 |
-| `SOURCE_NAME` / `SOURCE_FULL_NAME` / `SOURCE_ICON_URL` | SJMCL 来源信息 |
+```bash
+sudo docker compose up -d mysql
+```
 
-`ADMIN_EMAILS` 只在管理员表为空时导入。之后请在后台增删管理员，无需重启。
+创建 `/etc/systemd/system/mua-union-news.service`：
 
-## SJMCL 接口
+```ini
+[Unit]
+Description=MUA Union News
+After=network-online.target docker.service
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/mua-union-news
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo chown -R www-data:www-data /opt/mua-union-news
+sudo chmod 600 /opt/mua-union-news/.env
+sudo systemctl daemon-reload
+sudo systemctl enable --now mua-union-news
+```
+
+Nginx 反向代理：
+
+```nginx
+server {
+    listen 80;
+    server_name news.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+启用站点并配置 HTTPS 证书。生产地址为：
+
+- 首页：`https://news.example.com/`
+- 后台：`https://news.example.com/admin`
+- API：`https://news.example.com/api-sjmcl/article?pageSize=12`
+
+## SJMCL API
 
 ```text
 GET /api-sjmcl/article?pageSize=12
@@ -57,17 +104,16 @@ GET /api-sjmcl/article?pageSize=12&cursor=12
 GET /api-sjmcl/article?pageSize=0
 ```
 
-返回 `sourceInfo`、`posts` 和下一页 `next`。`pageSize=0` 只返回来源信息。接口格式参考[发现页官网文章接口](https://notes.sjtu.edu.cn/LD9Y-X7dRxaq_Q7rW7PNcw)。
+返回 `sourceInfo`、`posts` 和 `next`。`pageSize=0` 只返回来源信息。格式参考[发现页官网文章接口](https://notes.sjtu.edu.cn/LD9Y-X7dRxaq_Q7rW7PNcw)。
 
-## 维护
+## 更新与检查
 
-默认每 60 分钟检查所有启用来源，后台可将周期调整为 15–1440 分钟。Node.js 服务必须持续运行。
-
-```powershell
-npm test                         # 本地测试
-npm run crawl-now -- 2 4 10     # 按来源 ID 立即采集
-npm run backfill-rules           # 更新内置规则到已有数据库
-node scripts/test-rules.js       # 检查真实站点规则
+```bash
+cd /opt/mua-union-news
+sudo -u www-data git pull --ff-only
+sudo -u www-data npm ci --omit=dev
+sudo systemctl restart mua-union-news
+sudo journalctl -u mua-union-news -f
 ```
 
-采集规则保存在数据库中，可在后台直接编辑 JSON。删除来源会同时删除该来源的文章。
+默认每 60 分钟采集一次，后台可调整为 15–1440 分钟。`ADMIN_EMAILS` 只在管理员表为空时导入，之后在后台热增删。
